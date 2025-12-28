@@ -1,6 +1,5 @@
-# Data Science Project Boilerplate
-
-This boilerplate is designed to kickstart data science projects by providing a basic setup for database connections, data processing, and machine learning model development. It includes a structured folder organization for your datasets and a set of pre-defined Python packages necessary for most data science tasks.
+ ## Project Description
+This project implements a Natural Language Processing (NLP) pipeline to detect spam URLs using Machine Learning. The data is cleaned and preprocessed through text normalization, stopword removal, and lemmatization. Text features are extracted using TF-IDF, and a Support Vector Machine (SVM) classifier is trained and evaluated. The project includes model optimization, handling class imbalance, and saving the trained model for later use.
 
 ## Structure
 
