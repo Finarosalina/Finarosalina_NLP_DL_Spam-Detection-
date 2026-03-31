@@ -1,111 +1,127 @@
- ## Project Description
-This project implements a Natural Language Processing (NLP) pipeline to detect spam URLs using Machine Learning. The data is cleaned and preprocessed through text normalization, stopword removal, and lemmatization. Text features are extracted using TF-IDF, and a Support Vector Machine (SVM) classifier is trained and evaluated. The project includes model optimization, handling class imbalance, and saving the trained model for later use.
+# 🔗 URL Spam Detection — NLP & SVM Classifier
 
-## Structure
+**Binary text classification to detect spam URLs using NLP preprocessing, TF-IDF vectorization and Support Vector Machines, with class imbalance analysis.**
 
-The project is organized as follows:
+---
 
-- **`src/app.py`** → Main Python script where your project will run.
-- **`src/explore.ipynb`** → Notebook for exploration and testing. Once exploration is complete, migrate the clean code to `app.py`.
-- **`src/utils.py`** → Auxiliary functions, such as database connection.
-- **`requirements.txt`** → List of required Python packages.
-- **`models/`** → Will contain your SQLAlchemy model classes.
-- **`data/`** → Stores datasets at different stages:
-  - **`data/raw/`** → Raw data.
-  - **`data/interim/`** → Temporarily transformed data.
-  - **`data/processed/`** → Data ready for analysis.
+## Overview
 
+This project builds a spam detection pipeline for URLs using Natural Language Processing and a Support Vector Machine classifier. The dataset contains 2,999 URLs labeled as spam or not spam, reduced to 2,369 after deduplication.
 
-## ⚡ Initial Setup in Codespaces (Recommended)
+The project systematically evaluates different optimization strategies — class weighting, SMOTE oversampling, and GridSearchCV — and draws business-driven conclusions about which model to deploy based on the cost of each type of error.
 
-No manual setup is required, as **Codespaces is automatically configured** with the predefined files created by the academy for you. Just follow these steps:
+---
 
-1. **Wait for the environment to configure automatically**.
-   - All necessary packages and the database will install themselves.
-   - The automatically created `username` and `db_name` are in the **`.env`** file at the root of the project.
-2. **Once Codespaces is ready, you can start working immediately**.
+## Problem Definition
 
+Binary classification:
 
-## 💻 Local Setup (Only if you can't use Codespaces)
+| Label | Class | Count (after dedup) |
+|---|---|---|
+| 0 | Ham (not spam) | 1,934 |
+| 1 | Spam | 435 |
 
-**Prerequisites**
+The dataset is significantly imbalanced (~82% ham / ~18% spam), which drives the main methodological decisions.
 
-Make sure you have Python 3.11+ installed on your machine. You will also need pip to install the Python packages.
+---
 
-**Installation**
+## Methodology
 
-Clone the project repository to your local machine.
+**1. Text Preprocessing**
+- Removal of non-alphabetic characters using regex
+- Tokenization and lowercasing
+- Stopword removal (NLTK)
+- Lemmatization (WordNetLemmatizer)
+- Word cloud visualization of token frequency
 
-Navigate to the project directory and install the required Python packages:
+**2. Feature Engineering**
+- TF-IDF vectorization with `max_features=5000`, `max_df=0.8`, `min_df=5`
+- Final feature matrix shape: (2369, 538)
+
+**3. Model Training & Optimization**
+
+Three strategies were evaluated:
+
+| Model | Strategy | Precision (Spam) | Recall (Spam) | F1 (Spam) | Accuracy |
+|---|---|---|---|---|---|
+| Baseline SVC | Default | 0.83 | 0.51 | 0.63 | 0.9515 |
+| Balanced + recall | class_weight + recall scoring | 0.29 | 0.92 | 0.44 | 0.8059 |
+| Balanced + precision | class_weight + precision scoring | 0.58 | 0.72 | 0.64 | 0.9346 |
+| SMOTE | Oversampling | 0.40 | 0.84 | 0.54 | 0.8270 |
+
+**4. Business Decision**
+
+The baseline model (no optimization) was selected as the final model. The reasoning: misclassifying a legitimate email as spam (false positive) has a higher real-world cost than missing some spam — users lose access to important messages. Precision for the spam class (0.83) is more important than recall in this use case.
+
+---
+
+## Results
+
+**Final model — SVC linear kernel, no class balancing:**
+- Accuracy: **95.1%**
+- Spam Precision: **0.83**
+- Spam Recall: **0.51**
+- Spam F1: **0.63**
+
+---
+
+## Tech Stack
+
+- **NLP** — NLTK (stopwords, WordNetLemmatizer), regex
+- **Feature extraction** — scikit-learn TfidfVectorizer
+- **Modeling** — scikit-learn SVC
+- **Optimization** — GridSearchCV, SMOTE (imbalanced-learn)
+- **Visualization** — matplotlib, WordCloud
+- **Model persistence** — pickle, joblib
+
+---
+
+## Project Structure
+
+```
+Finarosalina_NLP_DL/
+├── src/
+│   ├── explore.ipynb           # Full analysis notebook
+│   └── app.py                  # Exported pipeline script
+├── models/
+│   └── svc_classifier_linear_42.sav   # Saved final model
+└── README.md
+```
+
+---
+
+## How to Run
 
 ```bash
-pip install -r requirements.txt
+# Clone the repository
+git clone https://github.com/Finarosalina/Finarosalina_NLP_DL.git
+cd Finarosalina_NLP_DL
+
+# Install dependencies
+pip install pandas scikit-learn nltk imbalanced-learn matplotlib wordcloud regex joblib
+
+# Download NLTK resources
+python -c "import nltk; nltk.download('wordnet'); nltk.download('stopwords')"
+
+# Run the notebook
+jupyter notebook src/explore.ipynb
 ```
 
-**Create a database (if necessary)**
+---
 
-Create a new database within the Postgres engine by customizing and executing the following command:
+## Key Learnings
 
-```bash
-$ psql -U postgres -c "DO \$\$ BEGIN 
-    CREATE USER my_user WITH PASSWORD 'my_password'; 
-    CREATE DATABASE my_database OWNER my_user; 
-END \$\$;"
-```
-Connect to the Postgres engine to use your database, manipulate tables, and data:
+- Class imbalance does not always require balancing — the business cost of each error type should guide the decision
+- SMOTE and class weighting improved spam recall but degraded precision significantly, which is unacceptable for a spam filter where false positives cost more than false negatives
+- GridSearchCV with recall scoring found the same hyperparameters as the default, confirming the baseline SVC was already well-configured for this feature space
+- TF-IDF on URL tokens (after lemmatization and stopword removal) is an effective and lightweight feature representation for URL-based spam detection
 
-```bash
-$ psql -U my_user -d my_database
-```
+---
 
-Once inside PSQL, you can create tables, run queries, insert, update, or delete data, and much more!
+## Dataset
 
-**Environment Variables**
+[URL Spam Dataset — 4Geeks Academy NLP Tutorial](https://raw.githubusercontent.com/4GeeksAcademy/NLP-project-tutorial/main/url_spam.csv)
 
-Create a .env file in the root directory of the project to store your environment variables, such as your database connection string:
+---
 
-```makefile
-DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB_NAME>"
-
-#example
-DATABASE_URL="postgresql://my_user:my_password@localhost:5432/my_database"
-```
-
-## Running the Application
-
-To run the application, execute the app.py script from the root directory of the project:
-
-```bash
-python src/app.py
-```
-
-## Adding Models
-
-To add SQLAlchemy model classes, create new Python script files within the models/ directory. These classes should be defined according to your database schema.
-
-Example model definition (`models/example_model.py`):
-
-```py
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-
-Base = declarative_base()
-
-class ExampleModel(Base):
-    __tablename__ = 'example_table'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
-```
-
-## Working with Data
-
-You can place your raw datasets in the data/raw directory, intermediate datasets in data/interim, and processed datasets ready for analysis in data/processed.
-
-To process data, you can modify the app.py script to include your data processing steps, using pandas for data manipulation and analysis.
-
-## Contributors
-
-This template was built as part of the [Data Science and Machine Learning Bootcamp](https://4geeksacademy.com/us/coding-bootcamps/datascience-machine-learning) by 4Geeks Academy by [Alejandro Sanchez](https://twitter.com/alesanchezr) and many other contributors. Learn more about [4Geeks Academy BootCamp programs](https://4geeksacademy.com/us/programs) here.
-
-Other templates and resources like this can be found on the school's GitHub page.
+*Part of the 4Geeks Academy Data Science & ML program portfolio.*
